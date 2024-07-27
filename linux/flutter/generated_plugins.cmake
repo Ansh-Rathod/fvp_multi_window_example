@@ -6,6 +6,8 @@ list(APPEND FLUTTER_PLUGIN_LIST
   desktop_multi_window
   flutter_window_close
   fvp
+  screen_retriever
+  window_manager
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

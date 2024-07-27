@@ -4,14 +4,12 @@ import 'dart:io';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_window_close/flutter_window_close.dart';
 import 'package:fvp/fvp.dart' as fvp;
 import 'package:video_player/video_player.dart';
+import 'package:window_manager/window_manager.dart';
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  fvp.registerWith();
 
   if (args.firstOrNull == "multi_window") {
     final windowId = int.parse(args[1]);
@@ -22,7 +20,10 @@ void main(List<String> args) async {
     final controller = WindowController.fromWindowId(windowId);
 
     //
+
     if (arguments['type'] == "video_player") {
+      fvp.registerWith();
+      await windowManager.ensureInitialized();
       runApp(
         VideoPlayerWindow(
           windowController: controller,
@@ -121,12 +122,13 @@ class _VideoPlayer extends StatefulWidget {
   State<_VideoPlayer> createState() => _VideoPlayerState();
 }
 
-class _VideoPlayerState extends State<_VideoPlayer> {
+class _VideoPlayerState extends State<_VideoPlayer> with WindowListener {
   late VideoPlayerController _controller;
 
   @override
   void initState() {
     super.initState();
+
     _controller = VideoPlayerController.file(File(widget.inputPath));
 
     _controller.addListener(() {
@@ -138,12 +140,17 @@ class _VideoPlayerState extends State<_VideoPlayer> {
       _controller.play();
     });
     _controller.play();
+    windowManager.addListener(this);
+  }
 
-    //dispose video player when window is closed
-    FlutterWindowClose.setWindowShouldCloseHandler(() async {
-      await _controller.dispose();
-      return true;
-    });
+  @override
+  void onWindowClose() async {
+    print("disposing it");
+
+    await _controller.pause();
+    await _controller.dispose();
+
+    super.onWindowClose();
   }
 
   @override
