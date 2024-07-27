@@ -4,13 +4,14 @@ import 'dart:io';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_window_close/flutter_window_close.dart';
 import 'package:fvp/fvp.dart' as fvp;
 import 'package:video_player/video_player.dart';
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  fvp.registerWith(options: {"fastSeek": true});
+  fvp.registerWith();
 
   if (args.firstOrNull == "multi_window") {
     final windowId = int.parse(args[1]);
@@ -43,8 +44,8 @@ class MainApp extends StatelessWidget {
       home: Scaffold(
         body: TextButton(
             onPressed: () async {
-              final result =
-                  await FilePicker.platform.pickFiles(allowMultiple: false);
+              final result = await FilePicker.platform
+                  .pickFiles(allowMultiple: false, type: FileType.video);
 
               if (result != null) {
                 createNewWindow(
@@ -72,8 +73,12 @@ class MainApp extends StatelessWidget {
     int? maxHeight,
   }) async {
     final window = await DesktopMultiWindow.createWindow(
-      jsonEncode(
-          {"type": type, "width": size.width, "height": size.height, ...args}),
+      jsonEncode({
+        "type": type,
+        "width": size.width,
+        "height": size.height,
+        ...args,
+      }),
     );
     await window.setFrame(const Offset(0, 0) & size);
     await window.center();
@@ -133,6 +138,12 @@ class _VideoPlayerState extends State<_VideoPlayer> {
       _controller.play();
     });
     _controller.play();
+
+    //dispose video player when window is closed
+    FlutterWindowClose.setWindowShouldCloseHandler(() async {
+      await _controller.dispose();
+      return true;
+    });
   }
 
   @override
